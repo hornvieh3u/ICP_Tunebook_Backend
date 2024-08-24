@@ -1,0 +1,17 @@
+{
+  "canisters": {
+    "tune_book_backend": {
+      "candid": "src/tune_book_backend.did",
+      "package": "tune_book_backend",
+      "type": "rust"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
