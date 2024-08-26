@@ -292,6 +292,9 @@ pub async fn accept_friend_request(sender: String, receiver: String) -> bool {
             if out_position.is_some() {
                 receiver_profile.outcoming_fr.remove(out_position.unwrap());
             }
+
+            sender_profile.friends.push(receiver.clone());
+            receiver_profile.friends.push(sender.clone());
             binding.insert(sender, sender_profile);
             binding.insert(receiver, receiver_profile);
             true
