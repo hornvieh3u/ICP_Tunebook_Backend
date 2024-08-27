@@ -23,6 +23,15 @@ export const idlFactory = ({ IDL }) => {
     'timestamp' : IDL.Nat64,
     'tune_data' : IDL.Opt(IDL.Text),
   });
+  const Session = IDL.Record({
+    'id' : IDL.Nat32,
+    'principal' : IDL.Text,
+    'contact' : IDL.Text,
+    'name' : IDL.Text,
+    'comment' : IDL.Text,
+    'location' : IDL.Text,
+    'daytime' : IDL.Text,
+  });
   const UserTune = IDL.Record({
     'id' : IDL.Nat32,
     'title' : IDL.Text,
@@ -30,6 +39,11 @@ export const idlFactory = ({ IDL }) => {
   });
   return IDL.Service({
     'accept_friend_request' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'add_session' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
     'add_tune' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Bool, IDL.Vec(IDL.Nat8)],
         [IDL.Bool],
@@ -56,6 +70,11 @@ export const idlFactory = ({ IDL }) => {
     'get_original_tune_list' : IDL.Func(
         [IDL.Int32],
         [IDL.Vec(IDL.Text), IDL.Int32],
+        ['query'],
+      ),
+    'get_sessions' : IDL.Func(
+        [IDL.Text, IDL.Int32],
+        [IDL.Vec(Session), IDL.Int32],
         ['query'],
       ),
     'get_user_tune' : IDL.Func([IDL.Text, IDL.Text], [IDL.Text], ['query']),

@@ -41,3 +41,14 @@ pub struct OriginTune {
     pub title: String,
     pub tune_data: String
 }
+
+#[derive(CandidType, Clone, Deserialize, Debug)]
+pub struct Session {
+    pub id: u32,
+    pub principal: String,
+    pub name: String,
+    pub location: String,
+    pub daytime: String,
+    pub contact: String,
+    pub comment: String,
+}

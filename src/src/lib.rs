@@ -75,3 +75,13 @@ pub fn browse_people(filter: String, page_num:i32) -> (Vec<types::Friend>, i32) 
 pub fn get_new_tunes_from_friends(principal: String) -> Vec<types::Tune> {
     utils::get_new_tunes_from_friends(principal)
 }
+
+#[ic_cdk::query]
+pub fn get_sessions(sub_name: String, page_num: i32) -> (Vec<types::Session>, i32) {
+    utils::get_sessions(sub_name.as_str(), page_num)
+}
+
+#[ic_cdk::update]
+pub fn add_session(principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
+    utils::add_session(principal, name, location, daytime, contact, comment)
+}

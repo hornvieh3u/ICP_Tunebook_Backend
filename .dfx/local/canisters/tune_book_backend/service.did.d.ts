@@ -18,6 +18,15 @@ export interface Profile {
   'friends' : Array<string>,
   'avatar' : Uint8Array | number[],
 }
+export interface Session {
+  'id' : number,
+  'principal' : string,
+  'contact' : string,
+  'name' : string,
+  'comment' : string,
+  'location' : string,
+  'daytime' : string,
+}
 export interface Tune {
   'id' : number,
   'title' : string,
@@ -33,6 +42,10 @@ export interface UserTune {
 }
 export interface _SERVICE {
   'accept_friend_request' : ActorMethod<[string, string], boolean>,
+  'add_session' : ActorMethod<
+    [string, string, string, string, string, string],
+    boolean
+  >,
   'add_tune' : ActorMethod<
     [string, string, string, boolean, Uint8Array | number[]],
     boolean
@@ -47,6 +60,7 @@ export interface _SERVICE {
   'get_new_tunes_from_friends' : ActorMethod<[string], Array<Tune>>,
   'get_original_tune' : ActorMethod<[string], string>,
   'get_original_tune_list' : ActorMethod<[number], [Array<string>, number]>,
+  'get_sessions' : ActorMethod<[string, number], [Array<Session>, number]>,
   'get_user_tune' : ActorMethod<[string, string], string>,
   'get_user_tune_list' : ActorMethod<
     [string, number],

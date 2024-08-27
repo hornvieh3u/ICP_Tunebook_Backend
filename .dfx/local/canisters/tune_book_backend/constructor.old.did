@@ -35,16 +35,6 @@ type OriginTune =record {
     "tune_data": text;
 };
 
-type Session =record {
-    "id": nat32;
-    "principal": text;
-    "name": text;
-    "location": text;
-    "daytime": text;
-    "contact": text;
-    "comment": text;
-}
-
 service : {
     "init": () -> ();
     "authentication": (text) -> (opt Profile) query;
@@ -61,6 +51,4 @@ service : {
     "filter_tunes": (text, text, text, int32) -> (vec OriginTune, int32) query;
     "browse_people": (text, int32) -> (vec Friend, int32) query;
     "get_new_tunes_from_friends": (text) -> (vec Tune) query;
-    "get_sessions": (text, int32) -> (vec Session, int32) query;
-    "add_session": (text, text, text, text, text, text) -> (bool);
 }

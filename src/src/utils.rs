@@ -9,11 +9,13 @@ use std::collections::BTreeMap;
 type ProfileStore = BTreeMap<String, types::Profile>;
 type TuneDB = BTreeMap<String, String>;
 type UserTuneStore = BTreeMap<String, Vec<types::Tune>>;
+type SessionDB = BTreeMap<u32, types::Session>;
 
 thread_local! {
     pub static PROFILE_STORE: RefCell<ProfileStore> = RefCell::default();
     pub static TUNE_DB: RefCell<TuneDB> = RefCell::default();
     pub static USER_TUNE_STORE: RefCell<UserTuneStore> = RefCell::default();
+    pub static SESSION_STORE: RefCell<SessionDB> = RefCell::default();
 }
 
 const TURN_DB_INIT: &str = include_str!("./tune_db.json");
@@ -345,7 +347,7 @@ pub fn browse_people(filter: String, page_num: i32) -> (Vec<types::Friend>, i32)
             .iter()
             .filter(|(_, profile)| profile.username.contains(filter.as_str()))
             .map(|(principal, profile)| {
-                let user = types::Friend {
+                let user: Friend = types::Friend {
                     principal: principal.clone(),
                     avatar: profile.avatar.clone(),
                     username: profile.username.clone(),
@@ -385,4 +387,42 @@ pub fn get_new_tunes_from_friends(principal: String) -> Vec<types::Tune> {
         });
     });
     result
+}
+
+pub fn get_sessions(sub_name: &str, page_num: i32) -> (Vec<types::Session>, i32) {
+    SESSION_STORE.with(|session_store| {
+        let res: Vec<types::Session> = session_store
+            .borrow()
+            .iter()
+            .filter(|(_, session)| session.name.contains(sub_name))
+            .map(|(_, session)| session.clone())
+            .collect();
+
+        let result: Vec<types::Session> = res
+            .iter()
+            .skip(page_num as usize * 15 as usize)
+            .enumerate()
+            .filter(|(index, _)| index.clone() < 15 as usize)
+            .map(|(_, session)| session.clone())
+            .collect();
+
+        (result, res.len() as i32)
+    })
+}
+
+pub fn add_session(principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
+    SESSION_STORE.with(|session_store| {
+        let new_session = types::Session {
+            id: ic_cdk::api::time() as u32,
+            principal,
+            name,
+            location,
+            daytime,
+            contact,
+            comment
+        };
+
+        session_store.borrow_mut().insert(new_session.id.clone(), new_session);
+        true
+    })
 }
