@@ -85,3 +85,8 @@ pub fn get_sessions(sub_name: String, page_num: i32) -> (Vec<types::Session>, i3
 pub fn add_session(principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
     utils::add_session(principal, name, location, daytime, contact, comment)
 }
+
+#[ic_cdk::update]
+pub fn update_session(id: u32, principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
+    utils::update_session(id, principal, name, location, daytime, contact, comment)
+}

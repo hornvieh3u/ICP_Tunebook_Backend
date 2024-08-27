@@ -5,6 +5,7 @@ use ic_cdk;
 use serde_json::Value;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use regex::Regex;
 
 type ProfileStore = BTreeMap<String, types::Profile>;
 type TuneDB = BTreeMap<String, String>;
@@ -317,9 +318,11 @@ pub fn filter_tunes(
         let res: Vec<OriginTune> = binding
             .iter()
             .filter(|(title, tune_data)| {
+                let regex_rythm = Regex::new(&format!(r"R:\s*{}", rithm)).unwrap();
+                let regex_key = Regex::new(&format!(r"K:\s*{}", key)).unwrap();
                 title.contains(sub_title)
-                    && (rithm == "all" || tune_data.contains(format!("R: {}", rithm).as_str()))
-                    && (key == "all" || tune_data.contains(format!("K: {}", key).as_str()))
+                    && (rithm == "all" || regex_rythm.is_match(&tune_data))
+                    && (key == "all" || regex_key.is_match(&tune_data))
             })
             .map(|(title, tune_data)| {
                 let tune = types::OriginTune {
@@ -423,6 +426,27 @@ pub fn add_session(principal: String, name: String, location: String, daytime: S
         };
 
         session_store.borrow_mut().insert(new_session.id.clone(), new_session);
+        true
+    })
+}
+
+pub fn update_session(id: u32, principal: String, name: String, location: String, daytime: String, contact: String, comment: String) -> bool {
+    SESSION_STORE.with(|session_store| {
+        if session_store.borrow().get(&id).is_none() {
+            return false;
+        }
+
+        let mut updated_session = session_store.borrow().get(&id).unwrap().clone();
+        if updated_session.principal != principal {
+            return false;
+        }
+
+        updated_session.name = name;
+        updated_session.location = location;
+        updated_session.daytime = daytime;
+        updated_session.contact = contact;
+        updated_session.comment = comment;
+        session_store.borrow_mut().insert(id, updated_session);
         true
     })
 }

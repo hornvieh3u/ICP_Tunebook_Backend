@@ -72,6 +72,10 @@ export interface _SERVICE {
     [string, string, string, string, Uint8Array | number[]],
     Profile
   >,
+  'update_session' : ActorMethod<
+    [number, string, string, string, string, string, string],
+    boolean
+  >,
   'update_tune' : ActorMethod<
     [number, string, string, string, boolean, Uint8Array | number[]],
     boolean

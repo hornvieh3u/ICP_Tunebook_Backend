@@ -94,6 +94,11 @@ export const idlFactory = ({ IDL }) => {
         [Profile],
         [],
       ),
+    'update_session' : IDL.Func(
+        [IDL.Nat32, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
     'update_tune' : IDL.Func(
         [IDL.Nat32, IDL.Text, IDL.Text, IDL.Text, IDL.Bool, IDL.Vec(IDL.Nat8)],
         [IDL.Bool],
