@@ -397,7 +397,7 @@ pub fn get_sessions(sub_name: &str, page_num: i32) -> (Vec<types::Session>, i32)
         let res: Vec<types::Session> = session_store
             .borrow()
             .iter()
-            .filter(|(_, session)| session.name.contains(sub_name))
+            .filter(|(_, session)| session.name.contains(sub_name) || session.location.contains(sub_name))
             .map(|(_, session)| session.clone())
             .collect();
 
