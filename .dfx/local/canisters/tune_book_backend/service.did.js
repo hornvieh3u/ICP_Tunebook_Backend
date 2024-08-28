@@ -51,7 +51,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'authentication' : IDL.Func([IDL.Text], [IDL.Opt(Profile)], ['query']),
     'browse_people' : IDL.Func(
-        [IDL.Text, IDL.Int32],
+        [IDL.Text, IDL.Text, IDL.Int32],
         [IDL.Vec(Friend), IDL.Int32],
         ['query'],
       ),

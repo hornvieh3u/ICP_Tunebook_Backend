@@ -254,6 +254,21 @@ pub async fn send_friend_request(sender: String, receiver: String) -> Option<typ
         if binding.get(&sender).is_some() && binding.get(&receiver).is_some() {
             let mut sender_profile = binding.get(&sender).unwrap().clone();
             let mut receiver_profile = binding.get(&receiver).unwrap().clone();
+
+            let outcoming_principals: Vec<String> = sender_profile.outcoming_fr
+                .iter()
+                .map(|friend| friend.principal.clone())
+                .collect();
+
+            let incoming_principals: Vec<String> = sender_profile.incoming_fr
+                .iter()
+                .map(|friend| friend.principal.clone())
+                .collect();
+            
+            if sender_profile.friends.contains(&receiver) || outcoming_principals.contains(&receiver) || incoming_principals.contains(&receiver) {
+                return None;
+            }
+
             let incoming_request = types::Friend {
                 principal: sender.clone(),
                 username: sender_profile.username.clone(),
@@ -343,12 +358,29 @@ pub fn filter_tunes(
     })
 }
 
-pub fn browse_people(filter: String, page_num: i32) -> (Vec<types::Friend>, i32) {
+pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Vec<types::Friend>, i32) {
     PROFILE_STORE.with(|profile_store| {
+        let my_profile = profile_store.borrow().get(&my_principal).unwrap().clone();
+        let outcoming_principals: Vec<String> = my_profile.outcoming_fr
+            .iter()
+            .map(|friend| friend.principal.clone())
+            .collect();
+
+        let incoming_principals: Vec<String> = my_profile.incoming_fr
+            .iter()
+            .map(|friend| friend.principal.clone())
+            .collect();
+
         let res: Vec<Friend> = profile_store
             .borrow()
             .iter()
-            .filter(|(_, profile)| profile.username.contains(filter.as_str()))
+            .filter(|(_, profile)| 
+                profile.username.contains(filter.as_str()) &&
+                profile.principal != my_profile.principal &&
+                !my_profile.friends.contains(&profile.principal) &&
+                !outcoming_principals.contains(&profile.principal) &&
+                !incoming_principals.contains(&profile.principal)
+            )
             .map(|(principal, profile)| {
                 let user: Friend = types::Friend {
                     principal: principal.clone(),

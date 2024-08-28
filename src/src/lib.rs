@@ -67,8 +67,8 @@ pub fn filter_tunes(title:String, rithm: String, key: String, page_num: i32) -> 
 }
 
 #[ic_cdk::query]
-pub fn browse_people(filter: String, page_num:i32) -> (Vec<types::Friend>, i32) {
-    utils::browse_people(filter, page_num)
+pub fn browse_people(principal: String, filter: String, page_num:i32) -> (Vec<types::Friend>, i32) {
+    utils::browse_people(principal, filter, page_num)
 }
 
 #[ic_cdk::query]
