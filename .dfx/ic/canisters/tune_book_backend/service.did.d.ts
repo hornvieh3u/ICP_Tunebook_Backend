@@ -51,7 +51,10 @@ export interface _SERVICE {
     boolean
   >,
   'authentication' : ActorMethod<[string], [] | [Profile]>,
-  'browse_people' : ActorMethod<[string, number], [Array<Friend>, number]>,
+  'browse_people' : ActorMethod<
+    [string, string, number],
+    [Array<Friend>, number]
+  >,
   'filter_tunes' : ActorMethod<
     [string, string, string, number],
     [Array<OriginTune>, number]

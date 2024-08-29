@@ -19,11 +19,11 @@ thread_local! {
     pub static SESSION_STORE: RefCell<SessionDB> = RefCell::default();
 }
 
-const TURN_DB_INIT: &str = include_str!("./tune_db.json");
+const TUNE_DB_INIT: &str = include_str!("./tune_db.json");
 
 pub async fn init() {
     ic_cdk::setup();
-    let parsed: Value = serde_json::from_str(TURN_DB_INIT).expect("parse error!");
+    let parsed: Value = serde_json::from_str(TUNE_DB_INIT).expect("parse error!");
     TUNE_DB.with(|tune_db| {
         let btree_map: BTreeMap<String, String> = if let Value::Object(obj) = parsed {
             obj.into_iter()
