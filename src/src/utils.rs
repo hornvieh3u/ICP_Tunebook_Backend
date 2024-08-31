@@ -112,21 +112,37 @@ pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Us
     USER_TUNE_STORE.with(|user_tune_store| {
         if user_tune_store.borrow().get(&principal).is_some() {
             let user_tunes = user_tune_store.borrow().get(&principal).unwrap().clone();
-            let res = user_tunes
-                .iter()
-                .skip(page_number as usize * 15)
-                .enumerate()
-                .filter(|(index, _)| index.clone() < 15)
-                .map(|(_, tune)| {
-                    let user_tune = types::UserTune {
-                        id: tune.id.clone(),
-                        title: tune.title.clone(),
-                        thumbnail: tune.thumbnail.clone(),
-                    };
-                    user_tune
-                })
-                .collect();
-            (res, user_tunes.len() as i32)
+            if page_number != -1 {
+                let res = user_tunes
+                    .iter()
+                    .skip(page_number as usize * 15)
+                    .enumerate()
+                    .filter(|(index, _)| index.clone() < 15)
+                    .map(|(_, tune)| {
+                        let user_tune = types::UserTune {
+                            id: tune.id.clone(),
+                            title: tune.title.clone(),
+                            thumbnail: tune.thumbnail.clone(),
+                        };
+                        user_tune
+                    })
+                    .collect();
+                return (res, user_tunes.len() as i32);
+            } else {
+                let res = user_tunes
+                    .iter()
+                    .enumerate()
+                    .map(|(_, tune)| {
+                        let user_tune = types::UserTune {
+                            id: tune.id.clone(),
+                            title: tune.title.clone(),
+                            thumbnail: tune.thumbnail.clone(),
+                        };
+                        user_tune
+                    })
+                    .collect();
+                return (res, user_tunes.len() as i32);
+            }
         } else {
             (vec![], 0)
         }
