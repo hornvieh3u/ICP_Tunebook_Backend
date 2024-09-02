@@ -83,7 +83,6 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(UserTune), IDL.Int32],
         ['query'],
       ),
-    'init' : IDL.Func([], [], []),
     'send_friend_request' : IDL.Func(
         [IDL.Text, IDL.Text],
         [IDL.Opt(Friend)],
@@ -106,4 +105,4 @@ export const idlFactory = ({ IDL }) => {
       ),
   });
 };
-export const init = ({ IDL }) => { return []; };
+export const init = ({ IDL }) => { return [IDL.Nat64]; };

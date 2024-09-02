@@ -69,7 +69,6 @@ export interface _SERVICE {
     [string, number],
     [Array<UserTune>, number]
   >,
-  'init' : ActorMethod<[], undefined>,
   'send_friend_request' : ActorMethod<[string, string], [] | [Friend]>,
   'update_profile' : ActorMethod<
     [string, string, string, string, Uint8Array | number[]],

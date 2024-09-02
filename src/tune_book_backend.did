@@ -45,8 +45,7 @@ type Session =record {
     "comment": text;
 }
 
-service : {
-    "init": () -> ();
+service : (nat64) -> {
     "authentication": (text) -> (opt Profile) query;
     "update_profile": (text, text, text, text, blob) -> (Profile);
     "get_original_tune_list": (int32) -> (vec text, int32) query;

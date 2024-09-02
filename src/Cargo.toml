@@ -13,5 +13,5 @@ candid = "0.10"
 ic-cdk = "0.13"
 serde = "1.0.132"
 serde_json = "1.0"
-ic-cdk-timers = "0.7" # Feel free to remove this dependency if you don't need timers
+ic-cdk-timers = "0.10" # Feel free to remove this dependency if you don't need timers
 regex = "1"

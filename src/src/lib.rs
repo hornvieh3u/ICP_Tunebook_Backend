@@ -1,8 +1,20 @@
 mod utils;
 mod types;
 
+#[ic_cdk::init]
+fn init(time: u64) {
+    ic_cdk_timers::set_timer(std::time::Duration::from_secs(time), || {
+        ic_cdk::spawn(update_data())
+    });
+}
+
+#[ic_cdk::post_upgrade]
+fn post_upgrade(time: u64) {
+    init(time)
+}
+
 #[ic_cdk::update]
-async fn init() {
+async fn update_data() {
     utils::init().await
 }
 
