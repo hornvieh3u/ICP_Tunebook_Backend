@@ -20,9 +20,9 @@ type Session = record {
 };
 type Tune = record {
   title : text;
-  "principal" : text;
   origin : bool;
   timestamp : nat64;
+  principals : vec text;
   tune_data : opt text;
 };
 type Tuneinfo = record { title : text; tune_data : text };

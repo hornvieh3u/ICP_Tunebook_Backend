@@ -28,9 +28,9 @@ export interface Session {
 }
 export interface Tune {
   'title' : string,
-  'principal' : string,
   'origin' : boolean,
   'timestamp' : bigint,
+  'principals' : Array<string>,
   'tune_data' : [] | [string],
 }
 export interface Tuneinfo { 'title' : string, 'tune_data' : string }

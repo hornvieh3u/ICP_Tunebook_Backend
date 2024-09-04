@@ -13,25 +13,12 @@ pub struct Profile {
 }
 
 #[derive(CandidType, Clone, Deserialize, Debug)]
-pub struct Friend {
-    pub principal: String,
-    pub avatar: Vec<u8>,
-    pub username: String
-}
-
-#[derive(CandidType, Clone, Deserialize, Debug)]
 pub struct Tune {
     pub origin: bool,
     pub title: String,
     pub tune_data: String,
     pub timestamp: u64,
-    pub principal: String
-}
-
-#[derive(CandidType, Clone, Deserialize, Debug)]
-pub struct Tuneinfo {
-    pub title: String,
-    pub tune_data: String
+    pub principals: Vec<String>,
 }
 
 #[derive(CandidType, Clone, Deserialize, Debug)]
@@ -43,4 +30,17 @@ pub struct Session {
     pub daytime: String,
     pub contact: String,
     pub comment: String,
+}
+
+#[derive(CandidType, Clone, Deserialize, Debug)]
+pub struct Friend {
+    pub principal: String,
+    pub avatar: Vec<u8>,
+    pub username: String
+}
+
+#[derive(CandidType, Clone, Deserialize, Debug)]
+pub struct Tuneinfo {
+    pub title: String,
+    pub tune_data: String
 }

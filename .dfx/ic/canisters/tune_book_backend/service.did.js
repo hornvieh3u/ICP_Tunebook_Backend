@@ -17,9 +17,9 @@ export const idlFactory = ({ IDL }) => {
   const Tuneinfo = IDL.Record({ 'title' : IDL.Text, 'tune_data' : IDL.Text });
   const Tune = IDL.Record({
     'title' : IDL.Text,
-    'principal' : IDL.Text,
     'origin' : IDL.Bool,
     'timestamp' : IDL.Nat64,
+    'principals' : IDL.Vec(IDL.Text),
     'tune_data' : IDL.Opt(IDL.Text),
   });
   const Session = IDL.Record({

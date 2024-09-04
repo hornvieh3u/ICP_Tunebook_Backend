@@ -74,7 +74,7 @@ thread_local! {
 
     pub static TUNE_STORE: RefCell<TuneDB> =
         RefCell::new(StableBTreeMap::init(
-            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(2)))
     ));
 
     pub static SESSION_STORE: RefCell<SessionDB> =
@@ -105,7 +105,7 @@ pub async fn init() {
                     title: key.clone(),
                     tune_data: value.clone(),
                     timestamp: ic_cdk::api::time(),
-                    principal: String::new()
+                    principals: vec![]
                 };
                 tune_store.borrow_mut().insert(key.clone(), new_tune);
             } 
@@ -191,7 +191,7 @@ pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Tu
         let user_tunes: Vec<types::Tuneinfo> = tune_store
             .borrow()
             .iter()
-            .filter(|(_, tune_info)| tune_info.principal == principal)
+            .filter(|(_, tune_info)| tune_info.principals.contains(&principal))
             .map(|(_, tune_info)| {
                 let user_tune = types::Tuneinfo {
                     title: tune_info.title.clone(),
@@ -225,7 +225,7 @@ pub fn get_user_tune(principal: String, title: String) -> String {
             .unwrap()
             .clone();
         
-        if user_tune.principal == principal {
+        if user_tune.principals.contains(&principal) {
             user_tune.tune_data.clone()
         } else {
             String::new()
@@ -240,16 +240,24 @@ pub async fn add_tune(
     origin: bool,
 ) -> bool {
     TUNE_STORE.with(|tune_store| {
+        let mut principals: Vec<String> = vec![];
         if tune_store.borrow().get(&title).is_some() {
-            return false;
+            let prev_tune = tune_store.borrow().get(&title).unwrap().clone();
+            if prev_tune.principals.contains(&principal) {
+                return false;
+            }
+
+            principals = prev_tune.principals;
         }
+
+        principals.push(principal);
 
         let new_tune = types::Tune {
             origin,
             title,
             tune_data,
             timestamp: ic_cdk::api::time(),
-            principal
+            principals
         };
         tune_store.borrow_mut().insert(new_tune.title.clone(), new_tune);
         true
@@ -266,13 +274,17 @@ pub async fn update_tune(
         if tune_store.borrow().get(&title).is_none() {
             return false;
         }
+        let prev_tune = tune_store.borrow().get(&title).unwrap().clone();
+        if !prev_tune.principals.contains(&principal) {
+            return false;
+        }
 
         let updated_tune = types::Tune {
             origin,
             title,
             tune_data,
             timestamp: ic_cdk::api::time(),
-            principal
+            principals: prev_tune.principals
         };
         tune_store.borrow_mut().insert(updated_tune.title.clone(), updated_tune);
         true
@@ -395,7 +407,7 @@ pub fn filter_tunes(
             .filter(|(title, tune_info)| {
                 let regex_rythm = Regex::new(&format!(r"R:\s*{}", rithm)).unwrap();
                 let regex_key = Regex::new(&format!(r"K:\s*{}", key)).unwrap();
-                title.contains(sub_title)
+                title.to_lowercase().contains(&sub_title.to_lowercase())
                     && (rithm == "all" || regex_rythm.is_match(&tune_info.tune_data.clone()))
                     && (key == "all" || regex_key.is_match(&tune_info.tune_data.clone()))
             })
@@ -461,20 +473,20 @@ pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Ve
     })
 }
 
-pub fn get_new_tunes_from_friends(principal: String) -> Vec<types::Tune> {
-    let friends = PROFILE_STORE.with(|profile_store| {
-        let binding = profile_store.borrow();
-        if binding.get(&principal).is_some() {
-            binding.get(&principal).unwrap().friends.clone()
-        } else {
-            vec![]
-        }
-    });
+pub fn get_new_tunes_from_friends(_principal: String) -> Vec<types::Tune> {
+    // let friends = PROFILE_STORE.with(|profile_store| {
+    //     let binding = profile_store.borrow();
+    //     if binding.get(&principal).is_some() {
+    //         binding.get(&principal).unwrap().friends.clone()
+    //     } else {
+    //         vec![]
+    //     }
+    // });
     TUNE_STORE.with(|tune_store| {
         tune_store
             .borrow()
             .iter()
-            .filter(|(_, tune_info)| friends.contains(&tune_info.principal) && ic_cdk::api::time() - tune_info.timestamp < 604800000000000)
+            .filter(|(_, tune_info)| ic_cdk::api::time() - tune_info.timestamp < 604800000000000)
             .map(|(_, tune)| tune.clone())
             .collect()
     })
