@@ -9,33 +9,26 @@ type Profile = record {
     "outcoming_fr": vec Friend;
 };
 
-type Friend =record {
+type Friend = record {
     "principal": text;
     "avatar": blob;
     "username": text;
 };
 
-type Tune =record {
-    "id": nat32;
+type Tune = record {
     "origin": bool;
     "title": text;
     "tune_data": opt text;
     "timestamp": nat64;
-    "thumbnail": blob;
+    "principal": text;
 };
 
-type UserTune =record {
-    "id": nat32;
-    "title": text;
-    "thumbnail": blob;
-};
-
-type OriginTune =record {
+type Tuneinfo = record {
     "title": text;
     "tune_data": text;
 };
 
-type Session =record {
+type Session = record {
     "id": nat32;
     "principal": text;
     "name": text;
@@ -50,14 +43,14 @@ service : (nat64) -> {
     "update_profile": (text, text, text, text, blob) -> (Profile);
     "get_original_tune_list": (int32) -> (vec text, int32) query;
     "get_original_tune": (text) -> (text) query;
-    "get_user_tune_list": (text, int32) -> (vec UserTune, int32) query;
+    "get_user_tune_list": (text, int32) -> (vec Tuneinfo, int32) query;
     "get_user_tune": (text, text) -> (text) query;
-    "add_tune": (text, text, text, bool, blob) -> (bool);
-    "update_tune": (nat32, text, text, text, bool, blob) -> (bool);
+    "add_tune": (text, text, text, bool) -> (bool);
+    "update_tune": (text, text, text, bool) -> (bool);
     "get_friends": (text) -> (vec Friend) query;
     "send_friend_request": (text, text) -> (opt Friend);
     "accept_friend_request": (text, text)-> (bool);
-    "filter_tunes": (text, text, text, int32) -> (vec OriginTune, int32) query;
+    "filter_tunes": (text, text, text, int32) -> (vec Tuneinfo, int32) query;
     "browse_people": (text, text, int32) -> (vec Friend, int32) query;
     "get_new_tunes_from_friends": (text) -> (vec Tune) query;
     "get_sessions": (text, int32) -> (vec Session, int32) query;

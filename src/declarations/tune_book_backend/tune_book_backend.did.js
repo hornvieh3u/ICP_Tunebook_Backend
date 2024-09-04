@@ -14,11 +14,10 @@ export const idlFactory = ({ IDL }) => {
     'friends' : IDL.Vec(IDL.Text),
     'avatar' : IDL.Vec(IDL.Nat8),
   });
-  const OriginTune = IDL.Record({ 'title' : IDL.Text, 'tune_data' : IDL.Text });
+  const Tuneinfo = IDL.Record({ 'title' : IDL.Text, 'tune_data' : IDL.Text });
   const Tune = IDL.Record({
-    'id' : IDL.Nat32,
     'title' : IDL.Text,
-    'thumbnail' : IDL.Vec(IDL.Nat8),
+    'principal' : IDL.Text,
     'origin' : IDL.Bool,
     'timestamp' : IDL.Nat64,
     'tune_data' : IDL.Opt(IDL.Text),
@@ -32,11 +31,6 @@ export const idlFactory = ({ IDL }) => {
     'location' : IDL.Text,
     'daytime' : IDL.Text,
   });
-  const UserTune = IDL.Record({
-    'id' : IDL.Nat32,
-    'title' : IDL.Text,
-    'thumbnail' : IDL.Vec(IDL.Nat8),
-  });
   return IDL.Service({
     'accept_friend_request' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
     'add_session' : IDL.Func(
@@ -45,7 +39,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'add_tune' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Bool, IDL.Vec(IDL.Nat8)],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Bool],
         [IDL.Bool],
         [],
       ),
@@ -57,7 +51,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'filter_tunes' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Int32],
-        [IDL.Vec(OriginTune), IDL.Int32],
+        [IDL.Vec(Tuneinfo), IDL.Int32],
         ['query'],
       ),
     'get_friends' : IDL.Func([IDL.Text], [IDL.Vec(Friend)], ['query']),
@@ -80,10 +74,9 @@ export const idlFactory = ({ IDL }) => {
     'get_user_tune' : IDL.Func([IDL.Text, IDL.Text], [IDL.Text], ['query']),
     'get_user_tune_list' : IDL.Func(
         [IDL.Text, IDL.Int32],
-        [IDL.Vec(UserTune), IDL.Int32],
+        [IDL.Vec(Tuneinfo), IDL.Int32],
         ['query'],
       ),
-    'init' : IDL.Func([], [], []),
     'send_friend_request' : IDL.Func(
         [IDL.Text, IDL.Text],
         [IDL.Opt(Friend)],
@@ -100,10 +93,10 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'update_tune' : IDL.Func(
-        [IDL.Nat32, IDL.Text, IDL.Text, IDL.Text, IDL.Bool, IDL.Vec(IDL.Nat8)],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Bool],
         [IDL.Bool],
         [],
       ),
   });
 };
-export const init = ({ IDL }) => { return []; };
+export const init = ({ IDL }) => { return [IDL.Nat64]; };

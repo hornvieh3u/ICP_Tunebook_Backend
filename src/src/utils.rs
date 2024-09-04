@@ -1,22 +1,86 @@
-use crate::types;
-use crate::types::Friend;
-use crate::types::OriginTune;
 use ic_cdk;
+use crate::types;
+use candid::{Decode, Encode};
 use serde_json::Value;
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use regex::Regex;
 
-type ProfileStore = BTreeMap<String, types::Profile>;
-type TuneDB = BTreeMap<String, String>;
-type UserTuneStore = BTreeMap<String, Vec<types::Tune>>;
-type SessionDB = BTreeMap<u32, types::Session>;
+use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
+use ic_stable_structures::storable::Bound;
+use ic_stable_structures::{DefaultMemoryImpl, StableBTreeMap, Storable};
+
+type Memory = VirtualMemory<DefaultMemoryImpl>;
+
+type ProfileStore = StableBTreeMap<String, types::Profile, Memory>;
+type TuneDB = StableBTreeMap<String, types::Tune, Memory>;
+type SessionDB = StableBTreeMap<u32, types::Session, Memory>;
+
+impl Storable for types::Profile {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 2000000, // Replace with the actual max size
+        is_fixed_size: false,
+    };
+}
+
+impl Storable for types::Tune {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 2000000, // Replace with the actual max size
+        is_fixed_size: false,
+    };
+}
+
+impl Storable for types::Session {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }
+    
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 2000000, // Replace with the actual max size
+        is_fixed_size: false,
+    };
+}
 
 thread_local! {
-    pub static PROFILE_STORE: RefCell<ProfileStore> = RefCell::default();
-    pub static TUNE_DB: RefCell<TuneDB> = RefCell::default();
-    pub static USER_TUNE_STORE: RefCell<UserTuneStore> = RefCell::default();
-    pub static SESSION_STORE: RefCell<SessionDB> = RefCell::default();
+    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
+        MemoryManager::init(DefaultMemoryImpl::default())
+    );
+
+    pub static PROFILE_STORE: RefCell<ProfileStore> =
+        RefCell::new(StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0)))
+    ));
+
+    pub static TUNE_STORE: RefCell<TuneDB> =
+        RefCell::new(StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+    ));
+
+    pub static SESSION_STORE: RefCell<SessionDB> =
+        RefCell::new(StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(3)))
+    ));
 }
 
 const TUNE_DB_INIT: &str = include_str!("./tune_db.json");
@@ -24,16 +88,28 @@ const TUNE_DB_INIT: &str = include_str!("./tune_db.json");
 pub async fn init() {
     ic_cdk::setup();
     let parsed: Value = serde_json::from_str(TUNE_DB_INIT).expect("parse error!");
-    TUNE_DB.with(|tune_db| {
-        let btree_map: BTreeMap<String, String> = if let Value::Object(obj) = parsed {
-            obj.into_iter()
-                .map(|(k, v)| (k, v.as_str().unwrap().to_string()))
-                .collect()
-        } else {
-            eprintln!("Expected a JSON object");
-            BTreeMap::new() // Return an empty map if not an object
-        };
-        *tune_db.borrow_mut() = btree_map;
+    TUNE_STORE.with(|tune_store| {
+        if tune_store.borrow().len() == 0 {
+            let btree_map = if let Value::Object(obj) = parsed {
+                obj.into_iter()
+                    .map(|(k, v)| (k, v.as_str().unwrap().to_string()))
+                    .collect()
+            } else {
+                eprintln!("Expected a JSON object");
+                BTreeMap::new() // Return an empty map if not an object
+            };
+
+            for (key, value) in btree_map.iter() {
+                let new_tune = types::Tune {
+                    origin: true,
+                    title: key.clone(),
+                    tune_data: value.clone(),
+                    timestamp: ic_cdk::api::time(),
+                    principal: String::new()
+                };
+                tune_store.borrow_mut().insert(key.clone(), new_tune);
+            } 
+        }
     });
 }
 
@@ -85,82 +161,74 @@ pub async fn update_profile(
 }
 
 pub fn get_original_tune_list(page_number: i32) -> (Vec<String>, i32) {
-    TUNE_DB.with(|tune_db| {
-        let res: Vec<String> = tune_db
+    TUNE_STORE.with(|tune_store| {
+        let res: Vec<String> = tune_store
             .borrow()
             .iter()
             .skip(page_number as usize * 15)
             .enumerate()
             .filter(|(index, _)| index.clone() < 15)
-            .map(|(_, (_, data))| data.clone())
+            .map(|(_, (_, data))| data.title.clone())
             .collect();
-        (res, tune_db.borrow().len() as i32)
+        (res, tune_store.borrow().len() as i32)
     })
 }
 
 pub fn get_original_tune(title: String) -> String {
-    TUNE_DB.with(|tune_db| {
-        if tune_db.borrow().get(&title).is_some() {
-            tune_db.borrow().get(&title).unwrap().clone()
+    TUNE_STORE.with(|tune_store| {
+        if tune_store.borrow().get(&title).is_some() {
+            // tune_store.borrow().get(&title).unwrap().tune_data.clone()
+            let selected_tune = tune_store.borrow_mut().get(&title).unwrap();
+            selected_tune.tune_data.clone()
         } else {
-            "not found".to_string()
+            String::from("not found")
         }
     })
 }
 
-pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::UserTune>, i32) {
-    USER_TUNE_STORE.with(|user_tune_store| {
-        if user_tune_store.borrow().get(&principal).is_some() {
-            let user_tunes = user_tune_store.borrow().get(&principal).unwrap().clone();
-            if page_number != -1 {
-                let res = user_tunes
-                    .iter()
-                    .skip(page_number as usize * 15)
-                    .enumerate()
-                    .filter(|(index, _)| index.clone() < 15)
-                    .map(|(_, tune)| {
-                        let user_tune = types::UserTune {
-                            id: tune.id.clone(),
-                            title: tune.title.clone(),
-                            thumbnail: tune.thumbnail.clone(),
-                        };
-                        user_tune
-                    })
-                    .collect();
-                return (res, user_tunes.len() as i32);
-            } else {
-                let res = user_tunes
-                    .iter()
-                    .enumerate()
-                    .map(|(_, tune)| {
-                        let user_tune = types::UserTune {
-                            id: tune.id.clone(),
-                            title: tune.title.clone(),
-                            thumbnail: tune.thumbnail.clone(),
-                        };
-                        user_tune
-                    })
-                    .collect();
-                return (res, user_tunes.len() as i32);
+pub fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Tuneinfo>, i32) {
+    TUNE_STORE.with(|tune_store| {
+        let user_tunes: Vec<types::Tuneinfo> = tune_store
+            .borrow()
+            .iter()
+            .filter(|(_, tune_info)| tune_info.principal == principal)
+            .map(|(_, tune_info)| {
+                let user_tune = types::Tuneinfo {
+                    title: tune_info.title.clone(),
+                    tune_data: tune_info.tune_data.clone()
+                };
+                user_tune
+            })
+            .collect();
+
+            if page_number == -1 {
+                return (user_tunes.clone(), user_tunes.len() as i32);
             }
-        } else {
-            (vec![], 0)
-        }
+
+            let res = user_tunes
+                .iter()
+                .skip(page_number as usize * 15)
+                .enumerate()
+                .filter(|(index, _)| index.clone() < 15)
+                .map(|(_, tune_info)| tune_info.clone())
+                .collect();
+
+            return (res, user_tunes.len() as i32);
     })
 }
 
 pub fn get_user_tune(principal: String, title: String) -> String {
-    USER_TUNE_STORE.with(|user_tune_store| {
-        let user_tunebook = user_tune_store.borrow().get(&principal).unwrap().clone();
-        let tune = user_tunebook
-            .iter()
-            .find(|tune| tune.title == title)
-            .unwrap();
-        let tune_data = tune.clone().tune_data;
-        if tune_data.is_some() {
-            tune_data.unwrap()
+    TUNE_STORE.with(|tune_store| {
+        let user_tune = tune_store
+            .borrow()
+            .get(&title)
+            .unwrap()
+            .clone();
+        
+        if user_tune.principal == principal {
+            user_tune.tune_data.clone()
         } else {
-            TUNE_DB.with(|tune_db| tune_db.borrow().get(&title).unwrap().clone())
+            String::new()
         }
     })
 }
@@ -170,68 +238,44 @@ pub async fn add_tune(
     title: String,
     tune_data: String,
     origin: bool,
-    thumbnail: Vec<u8>,
 ) -> bool {
-    USER_TUNE_STORE.with(|user_tune_store| {
-        let mut user_tunebook: Vec<types::Tune> = vec![];
-        if user_tune_store.borrow().get(&principal).is_some() {
-            user_tunebook = user_tune_store.borrow().get(&principal).unwrap().clone();
-
-            let same_tunes: Vec<&types::Tune> = user_tunebook
-                .iter()
-                .filter(|&tune| tune.clone().title == title)
-                .collect();
-
-            if same_tunes.len() > 0 {
-                return false;
-            }
+    TUNE_STORE.with(|tune_store| {
+        if tune_store.borrow().get(&title).is_some() {
+            return false;
         }
+
         let new_tune = types::Tune {
-            id: ic_cdk::api::time() as u32,
             origin,
             title,
-            tune_data: Some(tune_data),
+            tune_data,
             timestamp: ic_cdk::api::time(),
-            thumbnail,
+            principal
         };
-        user_tunebook.push(new_tune);
-        user_tune_store
-            .borrow_mut()
-            .insert(principal, user_tunebook.clone());
+        tune_store.borrow_mut().insert(new_tune.title.clone(), new_tune);
         true
     })
 }
 
 pub async fn update_tune(
-    tune_id: u32,
     principal: String,
     title: String,
     tune_data: String,
     origin: bool,
-    thumbnail: Vec<u8>,
 ) -> bool {
-    USER_TUNE_STORE.with(|user_tune_store| {
-        if user_tune_store.borrow().get(&principal).is_some() {
-            let user_tunebook = user_tune_store.borrow().get(&principal).unwrap().clone();
-            let mut new_tunebook: Vec<types::Tune> = user_tunebook
-                .iter()
-                .filter(|tune| tune.id != tune_id)
-                .map(|tune| tune.clone())
-                .collect();
-            let new_tune = types::Tune{
-                id: tune_id,
-                title,
-                tune_data: Some(tune_data),
-                origin,
-                timestamp: ic_cdk::api::time(),
-                thumbnail
-            };
-            new_tunebook.push(new_tune);
-            user_tune_store.borrow_mut().insert(principal, new_tunebook);
-            true
-        } else {
-            false
+    TUNE_STORE.with(|tune_store| {
+        if tune_store.borrow().get(&title).is_none() {
+            return false;
         }
+
+        let updated_tune = types::Tune {
+            origin,
+            title,
+            tune_data,
+            timestamp: ic_cdk::api::time(),
+            principal
+        };
+        tune_store.borrow_mut().insert(updated_tune.title.clone(), updated_tune);
+        true
     })
 }
 
@@ -343,27 +387,27 @@ pub fn filter_tunes(
     rithm: &str,
     key: &str,
     page_num: i32,
-) -> (Vec<types::OriginTune>, i32) {
-    TUNE_DB.with(|tune_db| {
-        let binding = tune_db.borrow();
-        let res: Vec<OriginTune> = binding
+) -> (Vec<types::Tuneinfo>, i32) {
+    TUNE_STORE.with(|tune_store| {
+        let binding = tune_store.borrow();
+        let res: Vec<types::Tuneinfo> = binding
             .iter()
-            .filter(|(title, tune_data)| {
+            .filter(|(title, tune_info)| {
                 let regex_rythm = Regex::new(&format!(r"R:\s*{}", rithm)).unwrap();
                 let regex_key = Regex::new(&format!(r"K:\s*{}", key)).unwrap();
                 title.contains(sub_title)
-                    && (rithm == "all" || regex_rythm.is_match(&tune_data))
-                    && (key == "all" || regex_key.is_match(&tune_data))
+                    && (rithm == "all" || regex_rythm.is_match(&tune_info.tune_data.clone()))
+                    && (key == "all" || regex_key.is_match(&tune_info.tune_data.clone()))
             })
-            .map(|(title, tune_data)| {
-                let tune = types::OriginTune {
+            .map(|(title, tune_info)| {
+                let tune = types::Tuneinfo {
                     title: title.clone(),
-                    tune_data: tune_data.clone(),
+                    tune_data: tune_info.tune_data.clone(),
                 };
                 tune
             })
             .collect();
-        let result: Vec<OriginTune> = res
+        let result: Vec<types::Tuneinfo> = res
             .iter()
             .skip(page_num as usize * 15 as usize)
             .enumerate()
@@ -387,7 +431,7 @@ pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Ve
             .map(|friend| friend.principal.clone())
             .collect();
 
-        let res: Vec<Friend> = profile_store
+        let res: Vec<types::Friend> = profile_store
             .borrow()
             .iter()
             .filter(|(_, profile)| 
@@ -398,7 +442,7 @@ pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Ve
                 !incoming_principals.contains(&profile.principal)
             )
             .map(|(principal, profile)| {
-                let user: Friend = types::Friend {
+                let user = types::Friend {
                     principal: principal.clone(),
                     avatar: profile.avatar.clone(),
                     username: profile.username.clone(),
@@ -406,7 +450,7 @@ pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Ve
                 user
             })
             .collect();
-        let result: Vec<Friend> = res
+        let result: Vec<types::Friend> = res
             .iter()
             .skip(page_num as usize * 15 as usize)
             .enumerate()
@@ -418,7 +462,6 @@ pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Ve
 }
 
 pub fn get_new_tunes_from_friends(principal: String) -> Vec<types::Tune> {
-    let mut result: Vec<types::Tune> = vec![];
     let friends = PROFILE_STORE.with(|profile_store| {
         let binding = profile_store.borrow();
         if binding.get(&principal).is_some() {
@@ -427,17 +470,24 @@ pub fn get_new_tunes_from_friends(principal: String) -> Vec<types::Tune> {
             vec![]
         }
     });
-    USER_TUNE_STORE.with(|user_tune_store| {
-        let binding = user_tune_store.borrow();
-        friends.iter().for_each(|friend| {
-            let frined_tunes = binding.get(friend).unwrap_or(&vec![]).clone();
-            frined_tunes
-                .iter()
-                .filter(|tune| ic_cdk::api::time() - tune.timestamp < 604800000000000)
-                .for_each(|tune| result.push(tune.clone()));
-        });
-    });
-    result
+    TUNE_STORE.with(|tune_store| {
+        tune_store
+            .borrow()
+            .iter()
+            .filter(|(_, tune_info)| friends.contains(&tune_info.principal) && ic_cdk::api::time() - tune_info.timestamp < 604800000000000)
+            .map(|(_, tune)| tune.clone())
+            .collect()
+    })
+    // USER_TUNE_STORE.with(|user_tune_store| {
+    //     let binding = user_tune_store.borrow();
+    //     friends.iter().for_each(|friend| {
+    //         let frined_tunes = binding.get(friend).unwrap_or(&vec![]).clone();
+    //         frined_tunes
+    //             .iter()
+    //             .filter(|tune| ic_cdk::api::time() - tune.timestamp < 604800000000000)
+    //             .for_each(|tune| result.push(tune.clone()));
+    //     });
+    // });
 }
 
 pub fn get_sessions(sub_name: &str, page_num: i32) -> (Vec<types::Session>, i32) {

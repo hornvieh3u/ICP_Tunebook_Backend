@@ -39,7 +39,7 @@ fn get_original_tune(title: String) -> String {
 }
 
 #[ic_cdk::query]
-fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::UserTune>, i32) {
+fn get_user_tune_list(principal: String, page_number: i32) -> (Vec<types::Tuneinfo>, i32) {
     utils::get_user_tune_list(principal, page_number)
 }
 
@@ -49,13 +49,13 @@ fn get_user_tune(principal: String, title: String) -> String {
 }
 
 #[ic_cdk::update]
-async fn add_tune(principal: String, title: String, tune_data: String, origin: bool, thumbnail: Vec<u8>) -> bool {
-    utils::add_tune(principal, title, tune_data, origin, thumbnail).await
+async fn add_tune(principal: String, title: String, tune_data: String, origin: bool) -> bool {
+    utils::add_tune(principal, title, tune_data, origin).await
 }
 
 #[ic_cdk::update]
-async fn update_tune(tune_id: u32, principal: String, title: String, tune_data: String, origin: bool, thumbnail: Vec<u8>) -> bool {
-    utils::update_tune(tune_id, principal, title, tune_data, origin, thumbnail).await
+async fn update_tune(principal: String, title: String, tune_data: String, origin: bool) -> bool {
+    utils::update_tune(principal, title, tune_data, origin).await
 }
 
 #[ic_cdk::query]
@@ -74,7 +74,7 @@ pub async fn accept_friend_request(sender: String, receiver: String) -> bool {
 }
 
 #[ic_cdk::query]
-pub fn filter_tunes(title:String, rithm: String, key: String, page_num: i32) -> (Vec<types::OriginTune>, i32) {
+pub fn filter_tunes(title:String, rithm: String, key: String, page_num: i32) -> (Vec<types::Tuneinfo>, i32) {
     utils::filter_tunes(title.as_str(), rithm.as_str(), key.as_str(), page_num)
 }
 

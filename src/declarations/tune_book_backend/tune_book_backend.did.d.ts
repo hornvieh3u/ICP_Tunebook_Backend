@@ -7,7 +7,6 @@ export interface Friend {
   'username' : string,
   'avatar' : Uint8Array | number[],
 }
-export interface OriginTune { 'title' : string, 'tune_data' : string }
 export interface Profile {
   'pob' : string,
   'principal' : string,
@@ -28,28 +27,20 @@ export interface Session {
   'daytime' : string,
 }
 export interface Tune {
-  'id' : number,
   'title' : string,
-  'thumbnail' : Uint8Array | number[],
+  'principal' : string,
   'origin' : boolean,
   'timestamp' : bigint,
   'tune_data' : [] | [string],
 }
-export interface UserTune {
-  'id' : number,
-  'title' : string,
-  'thumbnail' : Uint8Array | number[],
-}
+export interface Tuneinfo { 'title' : string, 'tune_data' : string }
 export interface _SERVICE {
   'accept_friend_request' : ActorMethod<[string, string], boolean>,
   'add_session' : ActorMethod<
     [string, string, string, string, string, string],
     boolean
   >,
-  'add_tune' : ActorMethod<
-    [string, string, string, boolean, Uint8Array | number[]],
-    boolean
-  >,
+  'add_tune' : ActorMethod<[string, string, string, boolean], boolean>,
   'authentication' : ActorMethod<[string], [] | [Profile]>,
   'browse_people' : ActorMethod<
     [string, string, number],
@@ -57,7 +48,7 @@ export interface _SERVICE {
   >,
   'filter_tunes' : ActorMethod<
     [string, string, string, number],
-    [Array<OriginTune>, number]
+    [Array<Tuneinfo>, number]
   >,
   'get_friends' : ActorMethod<[string], Array<Friend>>,
   'get_new_tunes_from_friends' : ActorMethod<[string], Array<Tune>>,
@@ -67,9 +58,8 @@ export interface _SERVICE {
   'get_user_tune' : ActorMethod<[string, string], string>,
   'get_user_tune_list' : ActorMethod<
     [string, number],
-    [Array<UserTune>, number]
+    [Array<Tuneinfo>, number]
   >,
-  'init' : ActorMethod<[], undefined>,
   'send_friend_request' : ActorMethod<[string, string], [] | [Friend]>,
   'update_profile' : ActorMethod<
     [string, string, string, string, Uint8Array | number[]],
@@ -79,10 +69,7 @@ export interface _SERVICE {
     [number, string, string, string, string, string, string],
     boolean
   >,
-  'update_tune' : ActorMethod<
-    [number, string, string, string, boolean, Uint8Array | number[]],
-    boolean
-  >,
+  'update_tune' : ActorMethod<[string, string, string, boolean], boolean>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

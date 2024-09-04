@@ -1,6 +1,6 @@
-use candid::{ CandidType, Deserialize};
+use candid::{CandidType, Deserialize};
 
-#[derive(CandidType, Clone, Debug)]
+#[derive(CandidType, Clone, Deserialize, Debug)]
 pub struct Profile {
     pub principal: String,
     pub username: String,
@@ -21,23 +21,15 @@ pub struct Friend {
 
 #[derive(CandidType, Clone, Deserialize, Debug)]
 pub struct Tune {
-    pub id: u32,
     pub origin: bool,
     pub title: String,
-    pub tune_data: Option<String>,
+    pub tune_data: String,
     pub timestamp: u64,
-    pub thumbnail: Vec<u8>
+    pub principal: String
 }
 
 #[derive(CandidType, Clone, Deserialize, Debug)]
-pub struct UserTune {
-    pub id: u32,
-    pub title: String,
-    pub thumbnail: Vec<u8>
-}
-
-#[derive(CandidType, Clone, Deserialize, Debug)]
-pub struct OriginTune {
+pub struct Tuneinfo {
     pub title: String,
     pub tune_data: String
 }
