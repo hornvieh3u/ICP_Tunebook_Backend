@@ -447,7 +447,7 @@ pub fn browse_people(my_principal: String, filter: String, page_num: i32) -> (Ve
             .borrow()
             .iter()
             .filter(|(_, profile)| 
-                profile.username.contains(filter.as_str()) &&
+                profile.username.to_lowercase().contains(&filter.as_str().to_lowercase()) &&
                 profile.principal != my_profile.principal &&
                 !my_profile.friends.contains(&profile.principal) &&
                 !outcoming_principals.contains(&profile.principal) &&
@@ -507,7 +507,10 @@ pub fn get_sessions(sub_name: &str, page_num: i32) -> (Vec<types::Session>, i32)
         let res: Vec<types::Session> = session_store
             .borrow()
             .iter()
-            .filter(|(_, session)| session.name.contains(sub_name) || session.location.contains(sub_name))
+            .filter(|(_, session)| 
+                session.name.to_lowercase().contains(&sub_name.to_lowercase()) ||
+                session.location.to_lowercase().contains(&sub_name.to_lowercase())
+            )
             .map(|(_, session)| session.clone())
             .collect();
 

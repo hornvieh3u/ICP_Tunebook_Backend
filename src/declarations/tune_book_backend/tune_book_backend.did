@@ -9,23 +9,12 @@ type Profile = record {
     "outcoming_fr": vec Friend;
 };
 
-type Friend = record {
-    "principal": text;
-    "avatar": blob;
-    "username": text;
-};
-
 type Tune = record {
     "origin": bool;
     "title": text;
     "tune_data": opt text;
     "timestamp": nat64;
-    "principal": text;
-};
-
-type Tuneinfo = record {
-    "title": text;
-    "tune_data": text;
+    "principals": vec text;
 };
 
 type Session = record {
@@ -36,7 +25,18 @@ type Session = record {
     "daytime": text;
     "contact": text;
     "comment": text;
-}
+};
+
+type Friend = record {
+    "principal": text;
+    "avatar": blob;
+    "username": text;
+};
+
+type Tuneinfo = record {
+    "title": text;
+    "tune_data": text;
+};
 
 service : (nat64) -> {
     "authentication": (text) -> (opt Profile) query;
